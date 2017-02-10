@@ -145,7 +145,7 @@ class Vec2
 			return self.lengthsq > len*len ? self.normalize * len : self
 		else
 			return Vec2.new(
-				self.x.clamp(len.l, len.r), 
+				self.x.clamp(len.l, len.r),
 				self.y.clamp(len.b, len.t)
 			)
 		end

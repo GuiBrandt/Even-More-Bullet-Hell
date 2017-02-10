@@ -22,6 +22,9 @@ class World
 	#--------------------------------------------------------------------------
 	def initialize
 		@objects = []
+		@enemy_bullets = []
+		
+		@timers = []
 		
 		@shader_program = ShaderProgram.new
 		@shader_program.add_vertex_shader 'basic_2d'
@@ -32,13 +35,33 @@ class World
 	# Adiciona um objeto ao mundo
 	#--------------------------------------------------------------------------
 	def add object
-		@objects << object
+		if object.is_a?(Bullet) && object.shooter.is_a?(Enemy)
+			@enemy_bullets << object
+		else
+			@objects << object
+		end
 	end
 	#--------------------------------------------------------------------------
 	# Remove um objeto do mundo
 	#--------------------------------------------------------------------------
 	def remove object
-		@objects.delete object
+		if object.is_a?(Bullet) && object.shooter.is_a?(Enemy)
+			@enemy_bullets.delete object
+		else
+			@objects.delete object
+		end
+	end
+	#--------------------------------------------------------------------------
+	# Adiciona um timer
+	#--------------------------------------------------------------------------
+	def add_timer timer
+		@timers << timer
+	end
+	#--------------------------------------------------------------------------
+	# Remove um timer
+	#--------------------------------------------------------------------------
+	def remove_timer timer
+		@timers.delete timer
 	end
 	#--------------------------------------------------------------------------
 	# Atualização dos objetos
@@ -54,18 +77,26 @@ class World
 			end
 		end
 		
-		each_object do |obj|
-			each_object do |obj2|
+		@objects.each do |obj|
+			@objects.each do |obj2|
 				next unless obj.collidable?(obj2)
 				obj.collision(obj2) if obj.intersects? obj2
 			end
+		end
+		
+		@enemy_bullets.each do |obj|
+			$player.collision(obj) if obj.intersects? $player
+		end
+		
+		@timers.each do |timer|
+			timer.step
 		end
 	end
 	#--------------------------------------------------------------------------
 	# Executa um bloco para cada objeto no mundo
 	#--------------------------------------------------------------------------
 	def each_object
-		@objects.each_with_index do |obj|
+		(@enemy_bullets + @objects).each do |obj|
 			yield obj
 		end
 	end

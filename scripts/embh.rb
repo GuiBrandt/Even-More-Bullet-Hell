@@ -32,9 +32,16 @@ require 'embh/utils'
 
 # Classes do jogo
 require 'embh/world'
+require 'embh/timer'
+
+require 'embh/drawable'
 
 require 'embh/objects'
 require 'embh/bullets'
+require 'embh/enemies'
+require 'embh/bonuses'
+
+require 'embh/life_meter'
 
 #==============================================================================
 # Inicialização
@@ -42,6 +49,4 @@ require 'embh/bullets'
 glEnable GL_POLYGON_SMOOTH
 
 Graphics.resize_screen 600, 600
-
-$world = World.new
-$player = Player.new
+Graphics.max_frame_skip = 10

@@ -11,28 +11,31 @@
 #------------------------------------------------------------------------------
 # Classe geral para os objetos do jogo
 #==============================================================================
-class GameObject
+class GameObject < Drawable
 	attr_reader :left, :bottom, :right, :top
-	attr_accessor :velocity
+	protected :left, :bottom, :right, :top
+	
+	attr_accessor :velocity, :rotation
 	#--------------------------------------------------------------------------
 	# Construtor
 	#--------------------------------------------------------------------------
-	def initialize l, b, r, t
+	def initialize l, b, r, t, angle = 0.0
+		super()
+		
 		@left = l
 		@bottom = b
 		@right = r
 		@top = t
+		@rotation = angle
 		@velocity = Vec2::ZERO
-		
-		initialize_vertex_buffer
 		
 		$world.add self
 	end
 	#--------------------------------------------------------------------------
 	# Inicialização do buffer de vértice do objeto
 	#--------------------------------------------------------------------------
-	def initialize_vertex_buffer
-		@vertex_buffer = VertexBuffer.new 2, 6, GL_STREAM_DRAW
+	def init_vertex_buffer
+		@vertex_buffer = VertexBuffer.new 2, 6, GL_DYNAMIC_DRAW
 	end
 	#--------------------------------------------------------------------------
 	# Cor do objeto
@@ -58,10 +61,49 @@ class GameObject
 	# Verifica colisão com outra caixa
 	#--------------------------------------------------------------------------
 	def intersects? other
-		return self.left <= other.right &&
-			   other.left <= self.right &&
-			   self.bottom <= other.top &&
-			   other.bottom <= self.top
+		if self.rotation - other.rotation == 0.0
+			return self.left <= other.right &&
+				   other.left <= self.right &&
+				   self.bottom <= other.top &&
+				   other.bottom <= self.top
+		else
+			return self.near?(other) && 
+					(other.corners.any? {|c| self.has_point?(c)} || 
+					self.corners.any? {|c| other.has_point?(c)})
+		end
+	end
+	#--------------------------------------------------------------------------
+	# Verifica se um ponto está dentro do objeto
+	#--------------------------------------------------------------------------
+	def has_point? *p
+		if p.size == 2
+			p = Vec2.new *p
+		else
+			p = p[0]
+		end
+		
+		a, b, c, d = *corners
+		
+		ad = a - d
+		cd = c - d
+		tpc = p * 2 - a - c
+		
+		return cd.dot(tpc - cd) <= 0 && cd.dot(tpc + cd) >= 0 &&
+				ad.dot(tpc - ad) <= 0 && ad.dot(tpc + ad) >= 0
+	end
+	#--------------------------------------------------------------------------
+	# Verifica se a caixa está perto o suficiente de outra para uma colisão
+	#--------------------------------------------------------------------------
+	def near? other
+		w = @right - @left
+		h = @top - @bottom
+		dsq = w * w + h * h
+		
+		w = other.right - other.left
+		h = other.top - other.bottom
+		dsq += w * w + h * h
+		
+		return self.position.distancesq(other.position) <= dsq / 2
 	end
 	#--------------------------------------------------------------------------
 	# Empura a caixa com uma força vetorial `vect`
@@ -96,15 +138,46 @@ class GameObject
 	#--------------------------------------------------------------------------
 	# Lista de vértices 2D da caixa
 	#--------------------------------------------------------------------------
-	def vertices
+	def corners
+		origin = position
+	
+		cos = Math.cos(rotation)
+		sin = Math.sin(rotation)
+	
+		ax = origin.x + (@left - origin.x) * cos - (@top - origin.y) * sin
+		ay = origin.y + (@left - origin.x) * sin + (@top - origin.y) * cos
+		
+		bx = origin.x + (@right - origin.x) * cos - (@top - origin.y) * sin
+		by = origin.y + (@right - origin.x) * sin + (@top - origin.y) * cos
+		
+		cx = origin.x + (@right - origin.x) * cos - (@bottom - origin.y) * sin
+		cy = origin.y + (@right - origin.x) * sin + (@bottom - origin.y) * cos
+		
+		dx = origin.x + (@left - origin.x) * cos - (@bottom - origin.y) * sin
+		dy = origin.y + (@left - origin.x) * sin + (@bottom - origin.y) * cos
+	
 		return [
-			@left,  @top,
-			@right, @top,
-			@left,  @bottom,
+			Vec2.new(ax, ay),
+			Vec2.new(bx, by),
+			Vec2.new(cx, cy),
+			Vec2.new(dx, dy)
+		]
+	end
+	#--------------------------------------------------------------------------
+	# Lista de vértices 2D da caixa, usado para desenhos
+	#--------------------------------------------------------------------------
+	def vertices
+		vxs = corners
+		a, b, c, d = *vxs
+	
+		return [
+			a.x, a.y,
+			b.x, b.y,
+			c.x, c.y,
 			
-			@right, @top,
-			@right, @bottom,
-			@left,  @bottom
+			c.x, c.y,
+			d.x, d.y,
+			a.x, a.y
 		]
 	end
 	#--------------------------------------------------------------------------
@@ -146,6 +219,12 @@ class Bullet < GameObject
 		
 		super *args
 	end
+	#--------------------------------------------------------------------------
+	# Inicialização do buffer de vértice do objeto
+	#--------------------------------------------------------------------------
+	def init_vertex_buffer
+		@vertex_buffer = VertexBuffer.new 2, 6, GL_STREAM_DRAW
+	end
 end
 #==============================================================================
 # Shooter
@@ -153,11 +232,39 @@ end
 # Classe geral para os atiradores do jogo (jogador e inimigos)
 #==============================================================================
 class Shooter < GameObject
+	attr_reader :health
+	#--------------------------------------------------------------------------
+	# Construtor
+	#--------------------------------------------------------------------------
+	def initialize health, *args
+		super *args
+		
+		@health = health
+	end
 	#--------------------------------------------------------------------------
 	# Atira um projétil
 	#--------------------------------------------------------------------------
 	def shoot type, *args
 		type.new self, *args
+	end
+	#--------------------------------------------------------------------------
+	# Aplica dano ao atirador
+	#--------------------------------------------------------------------------
+	def damage n = 1
+		@health -= n
+		check_death
+	end
+	#--------------------------------------------------------------------------
+	# Verifica se o atirador morreu e chama o evento apropriado caso tenha
+	#--------------------------------------------------------------------------
+	def check_death
+		died if @health <= 0
+	end
+	#--------------------------------------------------------------------------
+	# Evento de morte do atirador
+	#--------------------------------------------------------------------------
+	def died
+		dispose
 	end
 end
 #==============================================================================
@@ -172,6 +279,13 @@ class Enemy < Shooter
 	def collidable? other
 		return other.is_a?(Bullet) && other.shooter.is_a?(Player)
 	end
+	#--------------------------------------------------------------------------
+	# Evento de colisão com outro objeto
+	#--------------------------------------------------------------------------
+	def collision other
+		self.damage
+		other.dispose
+	end
 end
 #==============================================================================
 # Player
@@ -183,17 +297,16 @@ class Player < Shooter
 	WIDTH = 1.0 / 36.0
 	HEIGHT = 1.0 / 36.0
 
-	attr_reader :lifes
 	#--------------------------------------------------------------------------
 	# Construtor
 	#--------------------------------------------------------------------------
 	def initialize		
 		super(
-			-WIDTH / 2, -0.3 - HEIGHT / 2, 
-			WIDTH / 2, -0.3 + HEIGHT / 2
+			INITIAL_LIFES,
+			
+			-WIDTH / 2, -0.5 - HEIGHT / 2, 
+			WIDTH / 2, -0.5 + HEIGHT / 2
 		)
-		
-		@lifes = INITIAL_LIFES
 	end
 	#--------------------------------------------------------------------------
 	# Cor do objeto
@@ -213,24 +326,21 @@ class Player < Shooter
 	#--------------------------------------------------------------------------
 	def collision other
 		if other.is_a? Bullet
-			@lifes -= 1
+			self.damage
 			other.dispose
-			
-			check_death
 		elsif other.is_a? Enemy
-			@lifes -= 1
-			check_death
+			self.damage
 		elsif other.is_a? Bonus
 			other.apply!
 			other.dispose
 		end
 	end
 	#--------------------------------------------------------------------------
-	# Verifica se o jogador morreu e executa o procedimento necessário caso
-	# tenha
+	# Evento de morte do jogador
 	#--------------------------------------------------------------------------
-	def check_death
-		Game.game_over if @lifes.zero?
+	def died
+		msgbox 'Game Over'
+		raise RGSSReset.new
 	end
 	#--------------------------------------------------------------------------
 	# Atira um projétil
@@ -277,10 +387,19 @@ class Player < Shooter
 			end
 		end
 		
-		if (Input.press?(:Z) || Input.press?(:SPACE)) && 
-			Graphics.frame_count % PLAYER_SHOOT_COOLDOWN == 0
-			self.shoot
-		end
+		shoot if should_shoot?
+	end
+	#--------------------------------------------------------------------------
+	# Verifica se o jogador deveria atirar neste frame
+	#--------------------------------------------------------------------------
+	def should_shoot?
+		return action? && Graphics.frame_count % PLAYER_SHOOT_COOLDOWN == 0
+	end
+	#--------------------------------------------------------------------------
+	# Verifica se os botões de ação estão pressionados
+	#--------------------------------------------------------------------------
+	def action?
+		return Input.press?(:Z) || Input.press?(:SPACE) || Input.press?(:ENTER)
 	end
 	#--------------------------------------------------------------------------
 	# Evento de quando o objeto sai da tela
@@ -301,5 +420,11 @@ class Bonus < GameObject
 	# Aplica o bônus
 	#--------------------------------------------------------------------------
 	def apply!
+	end
+	#--------------------------------------------------------------------------
+	# Inicialização do buffer de vértice do objeto
+	#--------------------------------------------------------------------------
+	def init_vertex_buffer
+		@vertex_buffer = VertexBuffer.new 2, 6, GL_STREAM_DRAW
 	end
 end

@@ -12,6 +12,11 @@ Graphics.setup
 require 'embh'
 
 bz_main do
+	$world = World.new
+	$player = Player.new
+
+	Enemy1.new 0, 0
+
 	loop do	
 		Graphics.update
 		Input.update

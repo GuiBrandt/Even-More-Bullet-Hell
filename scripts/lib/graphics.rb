@@ -20,6 +20,8 @@ module Graphics
 	@@_set_up = false
 	@@width = 544
 	@@height = 416
+	@@max_frame_skip = 0
+	@@frame_skip = 0
 	
     class << self
 		#----------------------------------------------------------------------
@@ -88,9 +90,19 @@ module Graphics
 
             # Espera um frame
             frame = 1.0 / frame_rate
-            until (Time.now - t) >= frame #&& GetActiveWindow() == @@hwnd
-                # ...
-            end
+			delta = Time.now - t
+			
+			@@frame_skip += delta / frame
+			@@frame_skip = [@@max_frame_skip,  @@frame_skip].min
+			
+			if @@frame_skip < 1
+				until delta >= (frame - @@frame_skip) #&& GetActiveWindow() == @@hwnd
+					delta = Time.now - t
+				end
+				@@frame_skip = 0
+			else
+				@@frame_skip -= 1
+			end
 			
 			# Limpa a tela
 			clear
@@ -195,6 +207,15 @@ module Graphics
 		#----------------------------------------------------------------------
 		def height
 			return @@height
+		end
+		#----------------------------------------------------------------------
+		# Define o máximo de frames a serem pulados caso haja lag
+		# Pular frames evita desaceleração do jogo mas causa perda de suavidade
+		# 
+		# O padrão para este valor é 0
+		#----------------------------------------------------------------------
+		def max_frame_skip=(n)
+			@@max_frame_skip = n
 		end
     end
 end

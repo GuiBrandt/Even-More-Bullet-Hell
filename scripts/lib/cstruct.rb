@@ -47,8 +47,12 @@ module CStruct
 		#----------------------------------------------------------------------
 		# Cria uma instância da struct
 		#----------------------------------------------------------------------
-		def new
-			_inst = ([0] * size).pack('C*')
+		def new str = nil
+			unless str.nil?
+				_inst = str.rjust(size, "\0").slice(0...size)
+			else
+				_inst = ([0] * size).pack('C*')
+			end
 
 			_inst.instance_variable_set('@_offsets'.to_sym, {})
 			_inst.instance_variable_set('@_sizes'.to_sym, {})
@@ -76,7 +80,8 @@ module CStruct
 				def []=(name, value)
 					sz = @_sizes[name]
 	
-					value = [value].pack("Q")[0, sz] if value.is_a? Integer
+					value = [value].pack('g').unpack('H16').first.to_i(16) if value.is_a? Float
+					value = [value].pack('Q') if value.is_a? Integer
 					
 					name = name.to_sym
 					return _slice_set(@_offsets[name], sz, value[0, sz])
