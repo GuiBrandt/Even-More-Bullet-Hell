@@ -15,13 +15,16 @@
 class World
 	SIZE = :TOO_SMALL_FOR_BOTH_OF_US
 	
-	attr_reader :shader_program
+	attr_reader :shader_program, :objects, :enemy_bullets
+	
+	private :objects, :enemy_bullets
 	
 	#--------------------------------------------------------------------------
 	# Construtor
 	#--------------------------------------------------------------------------
 	def initialize
 		@objects = []
+		@drawables = []
 		@enemy_bullets = []
 		
 		@timers = []
@@ -37,8 +40,10 @@ class World
 	def add object
 		if object.is_a?(Bullet) && object.shooter.is_a?(Enemy)
 			@enemy_bullets << object
-		else
+		elsif object.is_a?(GameObject)
 			@objects << object
+		else
+			@drawables << object
 		end
 	end
 	#--------------------------------------------------------------------------
@@ -47,8 +52,10 @@ class World
 	def remove object
 		if object.is_a?(Bullet) && object.shooter.is_a?(Enemy)
 			@enemy_bullets.delete object
-		else
+		elsif object.is_a?(GameObject)
 			@objects.delete object
+		else
+			@drawables.delete object
 		end
 	end
 	#--------------------------------------------------------------------------
@@ -67,7 +74,7 @@ class World
 	# Atualização dos objetos
 	#--------------------------------------------------------------------------
 	def update		
-		each_object do |obj|
+		all_objects.each do |obj|
 			obj.position += obj.velocity
 			
 			unless obj.position.x.between?(-1, 1) && 
@@ -77,28 +84,37 @@ class World
 			end
 		end
 		
-		@objects.each do |obj|
+		objects.each do |obj|
 			@objects.each do |obj2|
 				next unless obj.collidable?(obj2)
 				obj.collision(obj2) if obj.intersects? obj2
 			end
 		end
 		
-		@enemy_bullets.each do |obj|
+		enemy_bullets.each do |obj|
 			$player.collision(obj) if obj.intersects? $player
 		end
 		
 		@timers.each do |timer|
 			timer.step
 		end
+		
+		if Graphics.skip_frame?
+			Graphics.frame_skip
+			self.update
+		end
 	end
 	#--------------------------------------------------------------------------
-	# Executa um bloco para cada objeto no mundo
+	# Obtém a lista de todos os objetos do jogo
 	#--------------------------------------------------------------------------
-	def each_object
-		(@enemy_bullets + @objects).each do |obj|
-			yield obj
-		end
+	def all_objects
+		return @enemy_bullets + @objects
+	end
+	#--------------------------------------------------------------------------
+	# Obtém a lista de objetos desenháveis
+	#--------------------------------------------------------------------------
+	def drawable_objects
+		return @objects + @enemy_bullets + @drawables
 	end
 	#--------------------------------------------------------------------------
 	# Desenha os objetos
@@ -106,7 +122,7 @@ class World
 	def draw
 		@shader_program.use
 	
-		each_object do |obj|
+		drawable_objects.each do |obj|
 			obj.draw
 		end
 	end

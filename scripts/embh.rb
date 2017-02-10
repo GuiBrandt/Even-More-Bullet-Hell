@@ -15,13 +15,21 @@
 VELOCITY_DOWNSCALE_FACTOR = 600.0
 
 # Número inicial de vidas do jogador
-INITIAL_LIFES = 3
+INITIAL_LIFES = 5
+
+# Número máximo de vidas do jogador
+MAX_LIFES = 10
 
 # Velocidade do jogador
 PLAYER_SPEED = 1.0 / 135.0
 PLAYER_FAST_SPEED = PLAYER_SPEED * 1.75
 
+# Intervalo em frames entre os tiros do jogador
 PLAYER_SHOOT_COOLDOWN = 4
+
+# Número de frames que um medidor de vida permanece na tela após o dano ao
+# atirador relacionado ter ocorrido
+LIFE_METER_FADE_TIME = 60
 
 #==============================================================================
 # Módulos do jogo
@@ -49,4 +57,4 @@ require 'embh/life_meter'
 glEnable GL_POLYGON_SMOOTH
 
 Graphics.resize_screen 600, 600
-Graphics.max_frame_skip = 10
+Graphics.max_frame_skip = 2

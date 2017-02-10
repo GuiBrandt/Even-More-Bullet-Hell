@@ -63,8 +63,8 @@ class Enemy1 < Enemy
 	# Evento de morte do inimigo
 	#--------------------------------------------------------------------------
 	def died
-		Enemy1.new rand(1000) / 1000.0 - 0.5, rand(1000) / 1000.0 - 0.5
-		Enemy1.new rand(1000) / 1000.0 - 0.5, rand(1000) / 1000.0 - 0.5
+		Enemy1.new rand(1000) / 1000.0 - 0.5, rand(1000) / 2000.0
+		Enemy1.new rand(1000) / 1000.0 - 0.5, rand(1000) / 2000.0
 		
 		@timer.stop
 		

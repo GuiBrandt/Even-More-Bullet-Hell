@@ -20,6 +20,9 @@ module Graphics
 	@@_set_up = false
 	@@width = 544
 	@@height = 416
+	
+	@@last_t = nil
+	
 	@@max_frame_skip = 0
 	@@frame_skip = 0
 	
@@ -80,7 +83,10 @@ module Graphics
 					  "Call `Graphics.setup` before `Graphics.update`"
 			end
 		
-            t = Time.now
+			t = Time.now
+			
+			@@last_t ||= Time.now
+			delta = t - @@last_t
 			
             # Troca os buffers de desenho e exibição (double buffering \o/)
 			#
@@ -90,24 +96,23 @@ module Graphics
 
             # Espera um frame
             frame = 1.0 / frame_rate
-			delta = Time.now - t
 			
-			@@frame_skip += delta / frame
-			@@frame_skip = [@@max_frame_skip,  @@frame_skip].min
+			@@frame_skip += delta * frame_rate
+			@@frame_skip = [@@max_frame_skip, @@frame_skip].min
 			
-			if @@frame_skip < 1
-				until delta >= (frame - @@frame_skip) #&& GetActiveWindow() == @@hwnd
-					delta = Time.now - t
-				end
-				@@frame_skip = 0
-			else
-				@@frame_skip -= 1
+			skip = [1.0, @@frame_skip].min
+			@@frame_skip -= skip
+			
+			until delta >= (1.0 - skip) * frame && GetActiveWindow() == @@hwnd
+				delta = Time.now - @@last_t
 			end
 			
 			# Limpa a tela
 			clear
 			
             self.frame_count += 1
+			
+			@@last_t = t
         end
         #----------------------------------------------------------------------
         # Aplica fadein na tela
@@ -216,6 +221,18 @@ module Graphics
 		#----------------------------------------------------------------------
 		def max_frame_skip=(n)
 			@@max_frame_skip = n
+		end
+		#----------------------------------------------------------------------
+		# Verifica se um frame deveria ser pulado
+		#----------------------------------------------------------------------
+		def skip_frame?
+			return @@frame_skip >= 1
+		end
+		#----------------------------------------------------------------------
+		# Sinaliza que um frame foi pulado
+		#----------------------------------------------------------------------
+		def frame_skip
+			@@frame_skip -= 1
 		end
     end
 end

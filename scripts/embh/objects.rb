@@ -203,6 +203,20 @@ class GameObject < Drawable
 	def dispose
 		$world.remove self
 	end
+	#--------------------------------------------------------------------------
+	# Obtém a largura do objeto
+	#--------------------------------------------------------------------------
+	def width
+		x_coords = corners.map {|c| c.x }
+		return x_coords.max - x_coords.min
+	end
+	#--------------------------------------------------------------------------
+	# Obtém a altura do objeto
+	#--------------------------------------------------------------------------
+	def height
+		y_coords = corners.map {|c| c.y }
+		return y_coords.max - y_coords.min
+	end
 end
 #==============================================================================
 # Bullet
@@ -240,6 +254,13 @@ class Shooter < GameObject
 		super *args
 		
 		@health = health
+		
+		@life_meter = LifeMeter.new self
+		
+		@hit_timer = Timer.new(LIFE_METER_FADE_TIME) do
+			@life_meter.hide
+			@hit_timer.stop
+		end
 	end
 	#--------------------------------------------------------------------------
 	# Atira um projétil
@@ -251,19 +272,27 @@ class Shooter < GameObject
 	# Aplica dano ao atirador
 	#--------------------------------------------------------------------------
 	def damage n = 1
+		@life_meter.show
+		
+		@hit_timer.start
+		@hit_timer.reset
+	
 		@health -= n
-		check_death
+		died if dead?
 	end
 	#--------------------------------------------------------------------------
-	# Verifica se o atirador morreu e chama o evento apropriado caso tenha
+	# Verifica se o atirador morreu
 	#--------------------------------------------------------------------------
-	def check_death
-		died if @health <= 0
+	def dead?
+		return @health <= 0
 	end
 	#--------------------------------------------------------------------------
 	# Evento de morte do atirador
 	#--------------------------------------------------------------------------
 	def died
+		@life_meter.hide
+		@hit_timer.stop
+	
 		dispose
 	end
 end
@@ -334,13 +363,6 @@ class Player < Shooter
 			other.apply!
 			other.dispose
 		end
-	end
-	#--------------------------------------------------------------------------
-	# Evento de morte do jogador
-	#--------------------------------------------------------------------------
-	def died
-		msgbox 'Game Over'
-		raise RGSSReset.new
 	end
 	#--------------------------------------------------------------------------
 	# Atira um projétil

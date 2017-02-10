@@ -33,7 +33,7 @@ class Timer
 	#--------------------------------------------------------------------------
 	# Começa o timer
 	#--------------------------------------------------------------------------
-	def start
+	def start	
 		$world.add_timer self
 		@block.call if @run_first && @tick.zero?
 	end

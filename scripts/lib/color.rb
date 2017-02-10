@@ -19,4 +19,15 @@ class Color
 	def to_4f; return [red, green, blue, alpha].map {|i| i / 255.0}; end
 	def to_3b; return [red, green, blue]; end
 	def to_4b; return [red, green, blue, alpha]; end
+	#--------------------------------------------------------------------------
+	# Obtém a cor inversa a esta
+	#--------------------------------------------------------------------------
+	def inverse
+		return Color.new(
+			255 - self.red, 
+			255 - self.green, 
+			255 - self.blue, 
+			self.alpha
+		)
+	end
 end
