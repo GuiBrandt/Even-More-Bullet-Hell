@@ -1463,7 +1463,11 @@ module Kernel
 			unless imported[fname]
 				p = wglGetProcAddress(fname.to_s.cptr)
 				
-				return import(fname, ret) if p.zero?
+				begin
+					return import(fname, ret) if p.zero?
+				rescue
+					return
+				end
 				
 				func = DL::CFunc.new p, types[ret], fname.to_s
 				imported[fname] = func
