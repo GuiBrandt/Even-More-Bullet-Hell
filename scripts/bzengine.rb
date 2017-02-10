@@ -17,9 +17,6 @@ require 'lib/undefs'
 require 'lib/cstruct'
 require 'lib/dllimport'
 
-# Biblioteca de física
-require 'lib/chipmunk'
-
 # Biblioteca de funções gráficas (OpenGL)
 require 'lib/opengl'
 require 'lib/shaders'

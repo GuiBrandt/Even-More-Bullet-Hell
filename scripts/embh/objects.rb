@@ -7,259 +7,299 @@
 =end
 
 #==============================================================================
-# AbstractHitbox
+# GameObject
 #------------------------------------------------------------------------------
-# Classe abstrata usada para representar as caixas de colisão dos objetos 
-# do jogo
+# Classe geral para os objetos do jogo
 #==============================================================================
-class AbstractHitbox
-	attr_accessor :x, :y
+class GameObject
+	attr_reader :left, :bottom, :right, :top
+	attr_accessor :velocity
 	#--------------------------------------------------------------------------
 	# Construtor
-	#
-	# => x		: Posição X da hitbox
-	# => y 		: Posição Y da hitbox
 	#--------------------------------------------------------------------------
-	def initialize x, y
-		@x = x
-		@y = y
-	end
-	#--------------------------------------------------------------------------
-	# Verifica colisão com outra hitbox
-	#--------------------------------------------------------------------------
-	def collides? other_hitbox
-		return false
-	end
-	#--------------------------------------------------------------------------
-	# Verifica se um ponto está dentro da hitbox
-	# => x 		: Posição X do ponto
-	# => y 		: Posição Y do ponto
-	#--------------------------------------------------------------------------
-	def contains_point? x, y
-		return false
-	end
-	#--------------------------------------------------------------------------
-	# Verifica se a hitbox intercepta uma linha de A a B
-	#
-	# => ax 	: Posição X do ponto A
-	# => ay 	: Posição Y do ponto A
-	# => bx 	: Posição X do ponto B
-	# => by 	: Posição Y do ponto B
-	#--------------------------------------------------------------------------
-	def intersects_line? ax, ay, bx, by
-		return false
-	end
-	#--------------------------------------------------------------------------
-	# Obtém um array com os vértices da hitbox
-	#--------------------------------------------------------------------------
-	def vertices
-		return []
-	end
-end
-#==============================================================================
-# RectHitbox
-#------------------------------------------------------------------------------
-# Classe usada para representar hitboxes retangulares
-#==============================================================================
-class RectHitbox < AbstractHitbox
-	attr_reader :width, :height
-	#--------------------------------------------------------------------------
-	# Construtor
-	#
-	# => x		: Posição X da hitbox
-	# => y 		: Posição Y da hitbox
-	# => w 		: Largura da hitbox
-	# => h 		: Altura da hitbox
-	#--------------------------------------------------------------------------
-	def initialize x, y, w, h
-		super x, y
-
-		@width = w
-		@height = h
-	end
-	#--------------------------------------------------------------------------
-	# Verifica colisão com outra hitbox
-	#--------------------------------------------------------------------------
-	def collides? other_hitbox
-
-		if other_hitbox.is_a? CircleHitbox
-			return other_hitbox.collides? self
-
-		elsif other_hitbox.is_a? RectHitbox
-
-			a = other_hitbox.left
-			b = other_hitbox.right
-			c = other_hitbox.top
-			d = other_hitbox.bottom
-
-			return contains_point?(a, c) || contains_point?(a, d) || 
-				   contains_point?(b, c) || contains_point(b, d)  ||
-				   other_hitbox.contains_point?(left, top) 		  ||
-				   other_hitbox.contains_point?(left, bottom)	  ||
-				   other_hitbox.contains_point?(left, top) 		  ||
-				   other_hitbox.contains_point?(right, bottom)
-		end
-
-		return false
-	end
-	#--------------------------------------------------------------------------
-	# Verifica se um ponto está dentro da hitbox
-	# => x 		: Posição X do ponto
-	# => y 		: Posição Y do ponto
-	#--------------------------------------------------------------------------
-	def contains_point? x, y
-		return x.between?(left, right) && y.between?(top, bottom)
-	end
-	#--------------------------------------------------------------------------
-	# Verifica se a hitbox intercepta uma linha de A a B
-	#
-	# => ax 	: Posição X do ponto A
-	# => ay 	: Posição Y do ponto A
-	# => bx 	: Posição X do ponto B
-	# => by 	: Posição Y do ponto B
-	#--------------------------------------------------------------------------
-	def intersects_line? ax, ay, bx, by
+	def initialize l, b, r, t
+		@left = l
+		@bottom = b
+		@right = r
+		@top = t
+		@velocity = Vec2::ZERO
 		
-		line_intersects_line = ->(
-			x1, y1, 
-			x2, y2,
-
-			x3, y3, 
-			x4, y4) do
-			
-			a1 = y2 - y1
-			b1 = x1 - x2
-			c1 = x2 * y1 - x1 * x2
-
-			r3 = a1 * x3 + b1 * y3 + c1
-			r4 = a1 * x4 + b1 * y4 + c1
-
-			if r3 != 0 && r4 != 0 && r3 / r3.abs == r4 / r4.abs
-				return false
-			end
-
-			a2 = y4 - y3
-			b2 = x3 - x4
-			c2 = x4 * y3 - x4 * y4
-
-			r1 = a2 * x1 + b2 * y1 + c2;
-    		r2 = a2 * x2 + b2 * y2 + c2
-
-			if r1 != 0 && r2 != 0 && r1 / r1.abs == r2 / r2.abs
-				return false
-			end
-
-			return true
-		end
-
-		return 	line_intersects_line(left, top, right, top, ax, ay, bx, by) 	  || 
-			   	line_intersects_line(right, top, right, bottom, ax, ay, bx, by)   ||
-			   	line_intersects_line(right, bottom, left, bottom, ax, ay, bx, by) ||
-			   	line_intersects_line(left, bottom, left, top, ax, ay, bx, by)
+		initialize_vertex_buffer
+		
+		$world.add self
 	end
 	#--------------------------------------------------------------------------
-	# Coordenadas a partir dos lados do retângulo
+	# Inicialização do buffer de vértice do objeto
 	#--------------------------------------------------------------------------
-	def left; 	return x - width / 2; 	end
-	def right; 	return x + width / 2; 	end
-	def top; 	return y - height / 2; 	end
-	def bottom; return y + height / 2; 	end
-	#--------------------------------------------------------------------------
-	# Obtém o tamanho da diagonal da hitbox
-	#--------------------------------------------------------------------------
-	def diagonal
-		return Math.hypot(width, height)
+	def initialize_vertex_buffer
+		@vertex_buffer = VertexBuffer.new 2, 6, GL_STREAM_DRAW
 	end
 	#--------------------------------------------------------------------------
-	# Obtém um array com os vértices da hitbox
+	# Cor do objeto
+	#--------------------------------------------------------------------------
+	def color
+		return Color.new(0, 0, 0)
+	end
+	#--------------------------------------------------------------------------
+	# Desenha o objeto na tela
+	#--------------------------------------------------------------------------
+	def draw
+		glUniform4f $world.shader_program[:color], *self.color.to_4f
+		@vertex_buffer.data = self.vertices
+		@vertex_buffer.draw
+	end
+	#--------------------------------------------------------------------------
+	# Construtor
+	#--------------------------------------------------------------------------
+	def self.new_for_extents x, y, hw, hh
+		return Hitbox.new x - hw, y - hh, x + hw, y + hh
+	end
+	#--------------------------------------------------------------------------
+	# Verifica colisão com outra caixa
+	#--------------------------------------------------------------------------
+	def intersects? other
+		return self.left <= other.right &&
+			   other.left <= self.right &&
+			   self.bottom <= other.top &&
+			   other.bottom <= self.top
+	end
+	#--------------------------------------------------------------------------
+	# Empura a caixa com uma força vetorial `vect`
+	#--------------------------------------------------------------------------
+	def impulse vect
+		@velocity += vect
+	end
+	#--------------------------------------------------------------------------
+	# Para a caixa
+	#--------------------------------------------------------------------------
+	def stop
+		@velocity = Vec2::ZERO
+	end
+	#--------------------------------------------------------------------------
+	# Posição do centro da hitbox
+	#--------------------------------------------------------------------------
+	def position
+		return Vec2.new((@left + @right) / 2, (@top + @bottom) / 2)
+	end
+	#--------------------------------------------------------------------------
+	# Define a posição do centro da hitbox
+	#--------------------------------------------------------------------------
+	def position=(vect)
+		hw = (@right - @left) / 2
+		hh = (@top - @bottom) / 2
+		
+		@left = vect.x - hw
+		@right = vect.x + hw
+		@top = vect.y + hh
+		@bottom = vect.y - hh
+	end
+	#--------------------------------------------------------------------------
+	# Lista de vértices 2D da caixa
 	#--------------------------------------------------------------------------
 	def vertices
-		ox = width / 2
-		oy = height / 2
-
 		return [
-			-ox, 		-oy,
-			width - ox, -oy,
-			-ox, 		height - oy,
-
-			width - ox, -oy,
-			width - ox, height - oy,
-			-ox, 		height - oy
+			@left,  @top,
+			@right, @top,
+			@left,  @bottom,
+			
+			@right, @top,
+			@right, @bottom,
+			@left,  @bottom
 		]
 	end
-end
-#==============================================================================
-# CircleHitbox
-#------------------------------------------------------------------------------
-# Classe usada para representar hitboxes circulares
-#==============================================================================
-class CircleHitbox < AbstractHitbox
-	attr_reader :radius
 	#--------------------------------------------------------------------------
-	# Construtor
-	#
-	# => x		: Posição X da hitbox
-	# => y 		: Posição Y da hitbox
-	# => radius	: Raio da hitbox
+	# Verifica se um objeto pode colidir com outro
 	#--------------------------------------------------------------------------
-	def initialize x, y, radius
-		super x, y
-
-		@radius = radius
-	end
-	#--------------------------------------------------------------------------
-	# Verifica colisão com outra hitbox
-	#--------------------------------------------------------------------------
-	def collides? other_hitbox
-
-		if other_hitbox.is_a? CircleHitbox
-
-			dx = x - other_hitbox.x
-			dy = y - other_hitbox.y
-			distance_sqr = dx * dx + dy * dy
-
-			return distance_sqr <= (radius + other_hitbox.radius) ** 2
-
-		elsif other_hitbox.is_a? RectHitbox
-			
-			closest_x = [x, other_hitbox.left, other_hitbox.right].sort[1]
-			closest_y = [y, other_hitbox.top, other_hitbox.bottom].sort[1]
-
-			dx = x - closest_x
-			dy = y - closest_y
-
-			return radius * radius >= dx * dx + dy * dy
-
-		end
-
+	def collidable? other
 		return false
 	end
 	#--------------------------------------------------------------------------
-	# Verifica se um ponto está dentro da hitbox
-	# => x 		: Posição X do ponto
-	# => y 		: Posição Y do ponto
+	# Evento de colisão com outro objeto
 	#--------------------------------------------------------------------------
-	def contains_point? x, y
-		dx = self.x - x
-		dy = self.y - y
-		return dx * dx + dy * dy < radius * radius
+	def collision other
 	end
 	#--------------------------------------------------------------------------
-	# Número de vértices da hitbox
+	# Evento de quando o objeto sai da tela
 	#--------------------------------------------------------------------------
-	def vertex_count
-		return [4, @radius / 3].max.floor
+	def out_of_screen
+		dispose
 	end
 	#--------------------------------------------------------------------------
-	# Obtém um array com os vértices da hitbox
+	# Apaga o objeto
 	#--------------------------------------------------------------------------
-	def vertices
-		ox = oy = radius / 2
+	def dispose
+		$world.remove self
+	end
+end
+#==============================================================================
+# Bullet
+#------------------------------------------------------------------------------
+# Classe geral para os projéteis do jogo
+#==============================================================================
+class Bullet < GameObject
+	attr_reader :shooter
+	#--------------------------------------------------------------------------
+	# Construtor
+	#--------------------------------------------------------------------------
+	def initialize shooter, *args
+		@shooter = shooter
+		
+		super *args
+	end
+end
+#==============================================================================
+# Shooter
+#------------------------------------------------------------------------------
+# Classe geral para os atiradores do jogo (jogador e inimigos)
+#==============================================================================
+class Shooter < GameObject
+	#--------------------------------------------------------------------------
+	# Atira um projétil
+	#--------------------------------------------------------------------------
+	def shoot type, *args
+		type.new self, *args
+	end
+end
+#==============================================================================
+# Enemy
+#------------------------------------------------------------------------------
+# Classe geral para os inimigos
+#==============================================================================
+class Enemy < Shooter
+	#--------------------------------------------------------------------------
+	# Verifica se um objeto pode colidir com outro
+	#--------------------------------------------------------------------------
+	def collidable? other
+		return other.is_a?(Bullet) && other.shooter.is_a?(Player)
+	end
+end
+#==============================================================================
+# Player
+#------------------------------------------------------------------------------
+# Classe para o jogador
+#==============================================================================
+class Player < Shooter
 
-		step = Math::PI * 2 / vertex_count
-		return Array.new(vertex_count) do |i|
-			theta = step * i
-			[Math.cos(theta) * radius - ox, Math.sin(theta) * radius - oy]
+	WIDTH = 1.0 / 36.0
+	HEIGHT = 1.0 / 36.0
+
+	attr_reader :lifes
+	#--------------------------------------------------------------------------
+	# Construtor
+	#--------------------------------------------------------------------------
+	def initialize		
+		super(
+			-WIDTH / 2, -0.3 - HEIGHT / 2, 
+			WIDTH / 2, -0.3 + HEIGHT / 2
+		)
+		
+		@lifes = INITIAL_LIFES
+	end
+	#--------------------------------------------------------------------------
+	# Cor do objeto
+	#--------------------------------------------------------------------------
+	def color
+		return Color.new(0, 255, 0)
+	end
+	#--------------------------------------------------------------------------
+	# Verifica se um objeto pode colidir com outro
+	#--------------------------------------------------------------------------
+	def collidable? other
+		return 	(other.is_a?(Bullet) && other.shooter.is_a?(Enemy)) || 
+				other.is_a?(Enemy) || other.is_a?(Bonus)
+	end
+	#--------------------------------------------------------------------------
+	# Evento de colisão com outro objeto
+	#--------------------------------------------------------------------------
+	def collision other
+		if other.is_a? Bullet
+			@lifes -= 1
+			other.dispose
+			
+			check_death
+		elsif other.is_a? Enemy
+			@lifes -= 1
+			check_death
+		elsif other.is_a? Bonus
+			other.apply!
+			other.dispose
 		end
+	end
+	#--------------------------------------------------------------------------
+	# Verifica se o jogador morreu e executa o procedimento necessário caso
+	# tenha
+	#--------------------------------------------------------------------------
+	def check_death
+		Game.game_over if @lifes.zero?
+	end
+	#--------------------------------------------------------------------------
+	# Atira um projétil
+	#--------------------------------------------------------------------------
+	def shoot
+		super StraightBullet, Math::PI / 2
+	end
+	#--------------------------------------------------------------------------
+	# Processa entrada do teclado
+	#--------------------------------------------------------------------------
+	def process_input
+		d = Input.dir8
+		
+		if d.zero?
+			self.stop
+		else	
+			a = 0
+		
+			case d
+			when 1
+				a = -Math::PI * 3 / 4
+			when 2
+				a = -Math::PI / 2
+			when 3
+				a = -Math::PI / 4
+			when 4
+				a = Math::PI
+			when 6
+				a = 0
+			when 7
+				a = Math::PI * 3 / 4
+			when 8
+				a = Math::PI / 2
+			when 9
+				a = Math::PI / 4
+			end
+			
+			self.velocity = Vec2.for_angle(a)
+			
+			if Input.press? :SHIFT
+				self.velocity *= PLAYER_SPEED
+			else
+				self.velocity *= PLAYER_FAST_SPEED
+			end
+		end
+		
+		if (Input.press?(:Z) || Input.press?(:SPACE)) && 
+			Graphics.frame_count % PLAYER_SHOOT_COOLDOWN == 0
+			self.shoot
+		end
+	end
+	#--------------------------------------------------------------------------
+	# Evento de quando o objeto sai da tela
+	#--------------------------------------------------------------------------
+	def out_of_screen
+		x = position.x.clamp(-1, 1)
+		y = position.y.clamp(-1, 1)
+		self.position = Vec2.new(x, y)
+	end
+end
+#==============================================================================
+# Bonus
+#------------------------------------------------------------------------------
+# Classe geral para os bônus que aparecem de vez em quando
+#==============================================================================
+class Bonus < GameObject
+	#--------------------------------------------------------------------------
+	# Aplica o bônus
+	#--------------------------------------------------------------------------
+	def apply!
 	end
 end

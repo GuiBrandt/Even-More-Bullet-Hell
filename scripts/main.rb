@@ -7,12 +7,17 @@
 =end
 
 require 'bzengine'
-
 Graphics.setup
 
+require 'embh'
+
 bz_main do
-	loop do		
+	loop do	
 		Graphics.update
 		Input.update
+		
+		$player.process_input
+		$world.update
+		$world.draw
 	end
 end
