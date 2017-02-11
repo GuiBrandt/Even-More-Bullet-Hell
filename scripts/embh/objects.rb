@@ -202,6 +202,8 @@ class GameObject < Drawable
 	#--------------------------------------------------------------------------
 	def dispose
 		$world.remove self
+
+		super
 	end
 	#--------------------------------------------------------------------------
 	# Obtém a largura do objeto

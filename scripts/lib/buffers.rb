@@ -81,6 +81,12 @@ class VertexBuffer
 		glDrawArrays mode, 0, @vertex_count
 		glDisableVertexAttribArray 0
 	end
+	#--------------------------------------------------------------------------
+	# Libera o buffer da memória
+	#--------------------------------------------------------------------------
+	def dispose
+		glDeleteBuffers 1, [@id].pack('L').cptr
+	end
 end
 #==============================================================================
 # IndexBuffer
@@ -156,5 +162,11 @@ class IndexBuffer
 		glVertexAttribPointer 0, vbo.vertex_size, GL_FLOAT, GL_FALSE, 0, 0
 		glDrawElements mode, @index_count, GL_UNSIGNED_SHORT, 0
 		glDisableVertexAttribArray 0
+	end
+	#--------------------------------------------------------------------------
+	# Libera o buffer da memória
+	#--------------------------------------------------------------------------
+	def dispose
+		glDeleteBuffers 1, [@id].pack('L').cptr
 	end
 end

@@ -24,6 +24,7 @@ require 'lib/buffers'
 require 'lib/graphics'
 require 'lib/color'
 require 'lib/bitmap'
+require 'lib/textures'
 
 # Funções dos controles
 require 'lib/input'

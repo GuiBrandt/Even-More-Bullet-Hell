@@ -20,7 +20,8 @@ class Bitmap
 		d = Array.new(pixels * 4)
 
 		for i in 0...pixels
-			d[i * 4, 4] = get_pixel(i % width, (i / width).truncate).to_4b
+			r, g, b, a = *get_pixel(i % width, (i / width).truncate).to_4b
+			d[i * 4, 4] = [b, g, r, a]
 		end
 
 		return d.pack("C*")
