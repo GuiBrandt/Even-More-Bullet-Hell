@@ -45,6 +45,11 @@ module Graphics
 			@@_clearProgram.add_vertex_shader 'basic_2d'
 			@@_clearProgram.add_fragment_shader 'basic_rgba'
 			@@_clearProgram.link
+
+			@@_spriteProgram = ShaderProgram.new
+			@@_spriteProgram.add_vertex_shader '2d_tex'
+			@@_spriteProgram.add_fragment_shader '2d_tex'
+			@@_spriteProgram.link
 			
 			# Buffers
 			@@_screen_rect_buffer = VertexBuffer.new(2, 6, GL_STATIC_DRAW)
@@ -59,15 +64,25 @@ module Graphics
 			]
 		end
 		#----------------------------------------------------------------------
+		# Desenha um sprite na tela
+		#----------------------------------------------------------------------
+		def sprite_shader_program
+			return @@_spriteProgram
+		end
+		#----------------------------------------------------------------------
 		# Limpeza da tela
 		#----------------------------------------------------------------------
 		def clear
-			if background.alpha != 255				
+			if background.alpha != 255
 				@@_clearProgram.use
 				
 				glUniform4f @@_clearProgram[:color], *background.to_4f
 				
+				glBlendFunc GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA
+
 				@@_screen_rect_buffer.draw
+				
+				glBlendFunc GL_SRC_ALPHA, GL_ONE
 			else
 				glClearColor *background.to_4f
 				glClear GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT

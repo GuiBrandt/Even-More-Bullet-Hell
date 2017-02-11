@@ -17,9 +17,8 @@ class Texture
 	#--------------------------------------------------------------------------
 	# Construtor
 	#--------------------------------------------------------------------------
-	def initialize bitmap, min_filter = GL_LINEAR_MIPMAP_LINEAR, 
-							mag_filter = GL_LINEAR,
-					mipmaps = true
+	def initialize bitmap, min_filter = GL_LINEAR, 
+							mag_filter = GL_LINEAR
 		@id = [0].pack('L')
 		glGenTextures 1, @id.cptr
 		@id = @id.unpack('L').first
@@ -37,7 +36,6 @@ class Texture
 
 		glTexParameteri GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, min_filter
 		glTexParameteri GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, mag_filter
-		glGenerateMipmap(GL_TEXTURE_2D) if mipmaps
 	end
 	#--------------------------------------------------------------------------
 	# Liga a textura

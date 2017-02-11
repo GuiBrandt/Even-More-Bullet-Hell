@@ -1,39 +1,82 @@
 =begin
 
-	drawable.rb
+  sprite.rb
 
-	Arquivo com a classe usada para representar os objetos que podem ser
-	desenhados na tela
+  Reescrita da classe sprite para uso com o OpenGL
 
 =end
 
 #==============================================================================
-# Drawable
+# Sprite
 #------------------------------------------------------------------------------
-# Classe para os objetos desenháveis
+# Classe das imagens 2D que aparecem na tela
 #==============================================================================
-class Drawable
+class Sprite < Drawable
+	attr_accessor :texture, :position
 	#--------------------------------------------------------------------------
 	# Construtor
 	#--------------------------------------------------------------------------
-	def initialize
-		init_vertex_buffer
+	def initialize img, *p
+		if img.is_a? Bitmap
+			@texture = Texture.new img
+		elsif img.is_a? Texture
+			@texture = img
+		else
+			raise ArgumentError.new
+		end
+
+		if p.size == 2
+			@position = p[0]
+			@size = p[1]
+		elsif p.size == 4
+			@position = Vec2.new *p[0, 2]
+			@size = Vec2.new *p[2, 2]
+		else
+			raise ArgumentError.new
+		end
+
+		super()
 	end
 	#--------------------------------------------------------------------------
 	# Inicializa o buffer de vértice do objeto
 	#--------------------------------------------------------------------------
 	def init_vertex_buffer
-		@vertex_buffer = nil
+		@vertex_buffer = VertexBuffer.new 4, 6, GL_DYNAMIC_DRAW
 	end
 	#--------------------------------------------------------------------------
-	# Desenha o objeto na tela
+	# Desenha o sprite na tela
 	#--------------------------------------------------------------------------
 	def draw
+		x, y, w, h = @position.x, @position.y, @size.x, @size.y
+
+		l = x - w
+		b = y - h
+		r = x + w
+		t = y + h
+
+		@vertex_buffer.data = [
+		# 	X	Y 	U 	V
+
+			l,	t,	0,  0,
+			r,	t,	1,	0,
+			l,	b,	0,	1,
+
+			r, 	t, 	1,	0,
+			r,	b,	1,	1,
+			l,	b, 	0,	1
+		]
+
+		Graphics.sprite_shader_program.use
+		@texture.bind
+
+		@vertex_buffer.draw
 	end
 	#--------------------------------------------------------------------------
-	# Libera o objeto da memória
+	# Libera o sprite da memória
 	#--------------------------------------------------------------------------
 	def dispose
-		@vertex_buffer.dispose unless @vertex_buffer.nil?
+		super
+
+		@texture.dispose
 	end
 end

@@ -42,8 +42,6 @@ require 'embh/utils'
 require 'embh/world'
 require 'embh/timer'
 
-require 'embh/drawable'
-
 require 'embh/objects'
 require 'embh/bullets'
 require 'embh/enemies'

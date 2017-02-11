@@ -1,10 +1,11 @@
 // Shader de fragmento simples, passa a cor RGBA recebida pelo uniform "color"
 // para o programa
 
-#version 110
+#version 130
 
 uniform vec4 color;
+out vec4 out_color;
 
 void main() {
-	gl_FragColor = color;
+	out_color = color;
 }

@@ -2,11 +2,14 @@
 // A textura é recebida pelo uniform `sampler` e as coordenadas UV pelo uniform
 // `uv`
 
-#version 110
+#version 130
 
 uniform sampler2D sampler;
-uniform vec2 uv;
+
+in vec4 tex_coord;
+
+out vec4 out_color;
 
 void main() {
-	gl_FragColor = texture(sampler, uv).rgba;
+	out_color = texture(sampler, tex_coord.xy).rgba;
 }

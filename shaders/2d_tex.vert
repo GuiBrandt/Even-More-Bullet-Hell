@@ -3,8 +3,11 @@
 
 #version 130
 
-in vec2 vertex;
+in vec4 vertex;
+
+out vec4 tex_coord;
 
 void main() {
-	gl_Position.xy = vertex;
+	gl_Position.xy = vertex.xy;
+	tex_coord.xy = vertex.zw;
 }
