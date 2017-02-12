@@ -93,7 +93,7 @@ class Shooter < GameObject
 	def initialize health, *args
 		super *args
 		
-		@health = health
+		@health = [max_health, health].min
 		
 		@life_meter = LifeMeter.new self
 		
@@ -111,14 +111,34 @@ class Shooter < GameObject
 	#--------------------------------------------------------------------------
 	# Aplica dano ao atirador
 	#--------------------------------------------------------------------------
-	def damage n = 1
+	def damage n = 1	
+		@health -= n
+		died if dead?
+
+		show_life_meter
+	end
+	#--------------------------------------------------------------------------
+	# Recupera saúde do atirador
+	#--------------------------------------------------------------------------
+	def heal n = 1
+		return if @health >= max_health
+		@health = [max_health, @health + n].min
+		show_life_meter
+	end
+	#--------------------------------------------------------------------------
+	# Mostra a barra de vida do atirador
+	#--------------------------------------------------------------------------
+	def show_life_meter
 		@life_meter.show
 		
 		@hit_timer.start
 		@hit_timer.reset
-	
-		@health -= n
-		died if dead?
+	end
+	#--------------------------------------------------------------------------
+	# Valor máximo para a vida do atirador
+	#--------------------------------------------------------------------------
+	def max_health
+		return Float::INFINITY
 	end
 	#--------------------------------------------------------------------------
 	# Verifica se o atirador morreu
@@ -200,7 +220,7 @@ class Player < Shooter
 		elsif other.is_a? Enemy
 			self.damage
 		elsif other.is_a? Bonus
-			other.apply!
+			other.apply! self
 			other.dispose
 		end
 	end
@@ -209,6 +229,12 @@ class Player < Shooter
 	#--------------------------------------------------------------------------
 	def shoot
 		super StraightBullet, Math::PI / 2
+	end
+	#--------------------------------------------------------------------------
+	# Valor máximo para a vida do atirador
+	#--------------------------------------------------------------------------
+	def max_health
+		return MAX_LIFES
 	end
 	#--------------------------------------------------------------------------
 	# Processa entrada do teclado
@@ -278,15 +304,59 @@ end
 # Classe geral para os bônus que aparecem de vez em quando
 #==============================================================================
 class Bonus < GameObject
+
+	WIDTH = 1.0 / 24.0
+	HEIGHT = 1.0 / 24.0
+
+	DROP_FALL_SPEED = Vec2.new(0, 1.0 / 72.0)
+	ACCELERATION = Vec2.new(0, -1.0 / 1440.0)
+
 	#--------------------------------------------------------------------------
-	# Aplica o bônus
+	# Construtor
 	#--------------------------------------------------------------------------
-	def apply!
+	def initialize *p, dropped
+
+		if p.size == 2
+			position = Vec2.new *p
+		elsif p.size == 1
+			position = p[0]
+		else
+			raise ArgumentError.new
+		end
+
+		l = position.x - WIDTH / 2
+		b = position.y - HEIGHT / 2
+		r = position.x + WIDTH / 2
+		t = position.y + HEIGHT / 2
+
+		super(l, b, r, t)
+
+		if dropped
+			self.velocity = DROP_FALL_SPEED
+
+			@acceleration_timer = Timer.new(1) do
+				self.velocity += ACCELERATION
+			end
+			@acceleration_timer.start
+		end
+	end
+	#--------------------------------------------------------------------------
+	# Aplica o bônus a um atirador
+	#--------------------------------------------------------------------------
+	def apply! shooter
 	end
 	#--------------------------------------------------------------------------
 	# Inicialização do buffer de vértice do objeto
 	#--------------------------------------------------------------------------
 	def init_vertex_buffer
 		@vertex_buffer = VertexBuffer.new 2, 6, GL_STREAM_DRAW
+	end
+	#--------------------------------------------------------------------------
+	# Libera o objeto da memória
+	#--------------------------------------------------------------------------
+	def dispose
+		@acceleration_timer.stop unless @acceleration_timer.nil?
+
+		super
 	end
 end

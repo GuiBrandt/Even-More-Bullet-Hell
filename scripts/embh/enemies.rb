@@ -37,10 +37,10 @@ class Enemy1 < Enemy
 		)
 		
 		@timer = Timer.new(90, true) do
-			p = 32
+			p = 16
 			
 			for i in 0...p
-				a = Math::PI * 2 / 32 * i
+				a = Math::PI * 2 / p * i
 				
 				self.shoot StraightBullet, a, 1.0 / 144.0
 			end
@@ -65,6 +65,8 @@ class Enemy1 < Enemy
 	def died
 		Enemy1.new rand(1000) / 1000.0 - 0.5, rand(1000) / 2000.0
 		Enemy1.new rand(1000) / 1000.0 - 0.5, rand(1000) / 2000.0
+
+		LifeBonus.new position, true
 		
 		@timer.stop
 		

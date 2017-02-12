@@ -31,6 +31,9 @@ PLAYER_SHOOT_COOLDOWN = 4
 # atirador relacionado ter ocorrido
 LIFE_METER_FADE_TIME = 60
 
+# Flag de uso de antialiasing
+ANTIALIASING = true
+
 #==============================================================================
 # Módulos do jogo
 #==============================================================================
@@ -52,7 +55,7 @@ require 'embh/life_meter'
 #==============================================================================
 # Inicialização
 #==============================================================================
-glEnable GL_POLYGON_SMOOTH
+glEnable GL_POLYGON_SMOOTH if ANTIALIASING
 
 Graphics.resize_screen 600, 600
 Graphics.max_frame_skip = 2

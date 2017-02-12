@@ -69,7 +69,12 @@ class Sprite < Drawable
 		Graphics.sprite_shader_program.use
 		@texture.bind
 
+		glBlendFunc GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA
+		glDisable GL_POLYGON_SMOOTH
+
 		@vertex_buffer.draw
+		glBlendFunc GL_SRC_ALPHA, GL_ONE
+		glEnable GL_POLYGON_SMOOTH if ANTIALIASING
 	end
 	#--------------------------------------------------------------------------
 	# Libera o sprite da memória
