@@ -41,11 +41,14 @@ class ShaderProgram
 		info_log_length = [0].pack("L")
 		glGetShaderiv shader, GL_INFO_LOG_LENGTH, info_log_length.cptr
 		info_log_length = info_log_length.unpack("L")[0]
-		
+
 		if info_log_length > 0
 			err = "\0" * (info_log_length + 1)
 			glGetShaderInfoLog shader, info_log_length, 0, err.cptr
-			raise "Falha ao compilar shader de vértice `#{name}`: #{err}"
+
+			unless err.include? "No errors"
+				raise "Falha ao compilar shader de vértice `#{name}`: #{err}"
+			end
 		end
 		
 		glAttachShader @id, shader
@@ -73,7 +76,10 @@ class ShaderProgram
 		if info_log_length > 0
 			err = "\0" * (info_log_length + 1)
 			glGetShaderInfoLog shader, info_log_length, 0, err.cptr
-			raise "Falha ao compilar shader de fragmento `#{name}`: #{err}"
+
+			unless err.include? "No errors"
+				raise "Falha ao compilar shader de fragmento `#{name}`: #{err}"
+			end
 		end
 		
 		glAttachShader @id, shader
