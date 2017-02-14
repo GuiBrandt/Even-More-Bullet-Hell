@@ -24,10 +24,12 @@ class World
 	#--------------------------------------------------------------------------
 	def initialize
 		@objects = []
-		@drawables = []
+		@players = []
+		@others = []
 		@enemy_bullets = []
 		
 		@timers = []
+		@triggers = []
 		
 		@shader_program = ShaderProgram.new
 		@shader_program.add_vertex_shader 'basic_2d'
@@ -38,24 +40,30 @@ class World
 	# Adiciona um objeto ao mundo
 	#--------------------------------------------------------------------------
 	def add object
-		if object.is_a?(Bullet) && object.shooter.is_a?(Enemy)
+		if (object.is_a?(Bullet) && object.shooter.is_a?(Enemy)) || 
+			object.is_a?(Bonus)
 			@enemy_bullets << object
+		elsif object.is_a?(Player)
+			@players << object
 		elsif object.is_a?(GameObject)
 			@objects << object
 		else
-			@drawables << object
+			@others << object
 		end
 	end
 	#--------------------------------------------------------------------------
 	# Remove um objeto do mundo
 	#--------------------------------------------------------------------------
 	def remove object
-		if object.is_a?(Bullet) && object.shooter.is_a?(Enemy)
+		if (object.is_a?(Bullet) && object.shooter.is_a?(Enemy)) || 
+			object.is_a?(Bonus)
 			@enemy_bullets.delete object
+		elsif object.is_a?(Player)
+			@players.delete object
 		elsif object.is_a?(GameObject)
 			@objects.delete object
 		else
-			@drawables.delete object
+			@others.delete object
 		end
 	end
 	#--------------------------------------------------------------------------
@@ -69,6 +77,18 @@ class World
 	#--------------------------------------------------------------------------
 	def remove_timer timer
 		@timers.delete timer
+	end
+	#--------------------------------------------------------------------------
+	# Adiciona um gatilho
+	#--------------------------------------------------------------------------
+	def add_trigger trigger
+		@triggers << trigger
+	end
+	#--------------------------------------------------------------------------
+	# Remove um gatilho
+	#--------------------------------------------------------------------------
+	def remove_trigger trigger
+		@triggers.delete trigger
 	end
 	#--------------------------------------------------------------------------
 	# Atualização dos objetos
@@ -92,11 +112,17 @@ class World
 		end
 		
 		enemy_bullets.each do |obj|
-			$player.collision(obj) if obj.intersects? $player
+			@players.each do |player|
+				player.collision(obj) if obj.intersects? player
+			end
 		end
 		
 		@timers.each do |timer|
 			timer.step
+		end
+
+		@triggers.each do |trigger|
+			trigger.update
 		end
 		
 		if Graphics.skip_frame?
@@ -108,13 +134,13 @@ class World
 	# Obtém a lista de todos os objetos do jogo
 	#--------------------------------------------------------------------------
 	def all_objects
-		return @enemy_bullets + @objects
+		return @enemy_bullets + @objects + @players
 	end
 	#--------------------------------------------------------------------------
 	# Obtém a lista de objetos desenháveis
 	#--------------------------------------------------------------------------
 	def drawable_objects
-		return @objects + @enemy_bullets + @drawables
+		return @objects + @players + @enemy_bullets + @others
 	end
 	#--------------------------------------------------------------------------
 	# Desenha os objetos
